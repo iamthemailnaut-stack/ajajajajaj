@@ -1,76 +1,354 @@
-local function generateSpawnCode(model)
-	local lines = {}
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
-	table.insert(lines, "-- Exact model recreation")
-	table.insert(lines, "-- Original model: " .. string.format("%q", model.Name))
-	table.insert(lines, "")
-	table.insert(lines, "local model = Instance.new(\"Model\")")
-	table.insert(lines, "model.Name = " .. string.format("%q", model.Name))
-	table.insert(lines, "model.Parent = workspace")
-	table.insert(lines, "")
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
 
-	local function n(v)
-		return string.format("%.6f", v)
+----------------------------------------------------------------
+-- GUI
+----------------------------------------------------------------
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "ModelCodeGenerator"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(650, 470)
+main.Position = UDim2.new(0.5, -325, 0.5, -235)
+main.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
+main.BorderSizePixel = 0
+main.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = main
+
+local stroke = Instance.new("UIStroke")
+stroke.Color = Color3.fromRGB(70, 70, 80)
+stroke.Thickness = 1
+stroke.Parent = main
+
+----------------------------------------------------------------
+-- Title bar
+----------------------------------------------------------------
+
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 48)
+titleBar.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = main
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.Parent = titleBar
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -110, 1, 0)
+title.Position = UDim2.fromOffset(18, 0)
+title.BackgroundTransparency = 1
+title.Text = "Model Code Generator"
+title.TextColor3 = Color3.fromRGB(245, 245, 250)
+title.TextSize = 18
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = titleBar
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(40, 40)
+close.Position = UDim2.new(1, -45, 0, 4)
+close.BackgroundColor3 = Color3.fromRGB(190, 55, 65)
+close.Text = "×"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.TextSize = 25
+close.Font = Enum.Font.GothamBold
+close.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = close
+
+----------------------------------------------------------------
+-- Selected model
+----------------------------------------------------------------
+
+local selectedLabel = Instance.new("TextLabel")
+selectedLabel.Size = UDim2.new(1, -36, 0, 32)
+selectedLabel.Position = UDim2.fromOffset(18, 60)
+selectedLabel.BackgroundTransparency = 1
+selectedLabel.Text = "No model selected"
+selectedLabel.TextColor3 = Color3.fromRGB(210, 210, 220)
+selectedLabel.TextSize = 15
+selectedLabel.Font = Enum.Font.GothamMedium
+selectedLabel.TextXAlignment = Enum.TextXAlignment.Left
+selectedLabel.Parent = main
+
+local infoLabel = Instance.new("TextLabel")
+infoLabel.Size = UDim2.new(1, -36, 0, 25)
+infoLabel.Position = UDim2.fromOffset(18, 88)
+infoLabel.BackgroundTransparency = 1
+infoLabel.Text = "Click a model or one of its parts."
+infoLabel.TextColor3 = Color3.fromRGB(130, 130, 140)
+infoLabel.TextSize = 13
+infoLabel.Font = Enum.Font.Gotham
+infoLabel.TextXAlignment = Enum.TextXAlignment.Left
+infoLabel.Parent = main
+
+----------------------------------------------------------------
+-- Generate button
+----------------------------------------------------------------
+
+local generate = Instance.new("TextButton")
+generate.Size = UDim2.fromOffset(180, 38)
+generate.Position = UDim2.fromOffset(18, 120)
+generate.BackgroundColor3 = Color3.fromRGB(70, 110, 220)
+generate.Text = "Generate Lua"
+generate.TextColor3 = Color3.new(1, 1, 1)
+generate.TextSize = 14
+generate.Font = Enum.Font.GothamBold
+generate.Parent = main
+
+local generateCorner = Instance.new("UICorner")
+generateCorner.CornerRadius = UDim.new(0, 8)
+generateCorner.Parent = generate
+
+----------------------------------------------------------------
+-- Clear button
+----------------------------------------------------------------
+
+local clear = Instance.new("TextButton")
+clear.Size = UDim2.fromOffset(100, 38)
+clear.Position = UDim2.fromOffset(208, 120)
+clear.BackgroundColor3 = Color3.fromRGB(50, 50, 58)
+clear.Text = "Clear"
+clear.TextColor3 = Color3.fromRGB(230, 230, 235)
+clear.TextSize = 14
+clear.Font = Enum.Font.GothamMedium
+clear.Parent = main
+
+local clearCorner = Instance.new("UICorner")
+clearCorner.CornerRadius = UDim.new(0, 8)
+clearCorner.Parent = clear
+
+----------------------------------------------------------------
+-- Code box
+----------------------------------------------------------------
+
+local codeBox = Instance.new("TextBox")
+codeBox.Name = "Code"
+codeBox.Size = UDim2.new(1, -36, 1, -180)
+codeBox.Position = UDim2.fromOffset(18, 170)
+codeBox.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+codeBox.BorderSizePixel = 0
+codeBox.Text = "-- Generated Lua will appear here"
+codeBox.TextColor3 = Color3.fromRGB(220, 225, 235)
+codeBox.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+codeBox.TextSize = 12
+codeBox.Font = Enum.Font.Code
+codeBox.TextXAlignment = Enum.TextXAlignment.Left
+codeBox.TextYAlignment = Enum.TextYAlignment.Top
+codeBox.MultiLine = true
+codeBox.ClearTextOnFocus = false
+codeBox.TextWrapped = false
+codeBox.Parent = main
+
+local codeCorner = Instance.new("UICorner")
+codeCorner.CornerRadius = UDim.new(0, 8)
+codeCorner.Parent = codeBox
+
+local codePadding = Instance.new("UIPadding")
+codePadding.PaddingTop = UDim.new(0, 10)
+codePadding.PaddingLeft = UDim.new(0, 10)
+codePadding.PaddingRight = UDim.new(0, 10)
+codePadding.Parent = codeBox
+
+----------------------------------------------------------------
+-- Status
+----------------------------------------------------------------
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -36, 0, 22)
+status.Position = UDim2.new(0, 18, 1, -28)
+status.BackgroundTransparency = 1
+status.Text = "Ready"
+status.TextColor3 = Color3.fromRGB(120, 200, 140)
+status.TextSize = 12
+status.Font = Enum.Font.Gotham
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = main
+
+----------------------------------------------------------------
+-- Draggable window
+----------------------------------------------------------------
+
+local dragging = false
+local dragStart
+local startPosition
+
+titleBar.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		dragging = true
+		dragStart = input.Position
+		startPosition = main.Position
+
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if not dragging then
+		return
 	end
 
-	local function vec3(v)
-		return string.format(
-			"Vector3.new(%s, %s, %s)",
-			n(v.X), n(v.Y), n(v.Z)
+	if input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+		local delta = input.Position - dragStart
+
+		main.Position = UDim2.new(
+			startPosition.X.Scale,
+			startPosition.X.Offset + delta.X,
+			startPosition.Y.Scale,
+			startPosition.Y.Offset + delta.Y
 		)
 	end
+end)
 
-	local function cf(v)
-		local x, y, z,
-			r00, r01, r02,
-			r10, r11, r12,
-			r20, r21, r22 = v:GetComponents()
+----------------------------------------------------------------
+-- Utility functions
+----------------------------------------------------------------
 
-		return string.format(
-			"CFrame.new(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-			n(x), n(y), n(z),
-			n(r00), n(r01), n(r02),
-			n(r10), n(r11), n(r12),
-			n(r20), n(r21), n(r22)
-		)
+local function quote(str)
+	return string.format("%q", tostring(str))
+end
+
+local function num(n)
+	return string.format("%.4f", n)
+end
+
+local function vector3(v)
+	return "Vector3.new("
+		.. num(v.X) .. ", "
+		.. num(v.Y) .. ", "
+		.. num(v.Z) .. ")"
+end
+
+local function color3(c)
+	return string.format(
+		"Color3.fromRGB(%d, %d, %d)",
+		math.round(c.R * 255),
+		math.round(c.G * 255),
+		math.round(c.B * 255)
+	)
+end
+
+local function cframe(cf)
+	local x, y, z,
+		r00, r01, r02,
+		r10, r11, r12,
+		r20, r21, r22 = cf:GetComponents()
+
+	return string.format(
+		"CFrame.new(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+		num(x), num(y), num(z),
+		num(r00), num(r01), num(r02),
+		num(r10), num(r11), num(r12),
+		num(r20), num(r21), num(r22)
+	)
+end
+
+local function materialString(material)
+	return "Enum.Material." .. material.Name
+end
+
+----------------------------------------------------------------
+-- Selected model
+----------------------------------------------------------------
+
+local selectedModel
+
+mouse.Button1Down:Connect(function()
+	local target = mouse.Target
+
+	if not target then
+		return
 	end
 
-	local function color(c)
-		return string.format(
-			"Color3.fromRGB(%d, %d, %d)",
-			math.round(c.R * 255),
-			math.round(c.G * 255),
-			math.round(c.B * 255)
-		)
+	local model = target:FindFirstAncestorOfClass("Model")
+
+	if not model then
+		if target:IsA("BasePart") then
+			model = target
+		else
+			return
+		end
 	end
 
-	------------------------------------------------------------
-	-- Parts
-	------------------------------------------------------------
+	selectedModel = model
+
+	local parts = 0
 
 	for _, obj in ipairs(model:GetDescendants()) do
 		if obj:IsA("BasePart") then
+			parts += 1
+		end
+	end
 
+	selectedLabel.Text = "Selected: " .. model.Name
+	infoLabel.Text = tostring(parts) .. " BasePart(s) detected"
+	status.Text = "Model selected"
+	status.TextColor3 = Color3.fromRGB(120, 200, 140)
+end)
+
+----------------------------------------------------------------
+-- Generate code
+----------------------------------------------------------------
+
+local function generateCode(model)
+
+	local lines = {}
+
+	table.insert(lines, "-- Generated model")
+	table.insert(lines, "-- Model: " .. model.Name)
+	table.insert(lines, "")
+	table.insert(lines, "local model = Instance.new(\"Model\")")
+	table.insert(lines, "model.Name = " .. quote(model.Name))
+	table.insert(lines, "model.Parent = workspace")
+	table.insert(lines, "")
+
+	------------------------------------------------------------
+	-- Create parts
+	------------------------------------------------------------
+
+	for _, obj in ipairs(model:GetDescendants()) do
+
+		if obj:IsA("BasePart") then
+
+			table.insert(lines, "-- Part: " .. obj.Name)
 			table.insert(lines, "do")
+
 			table.insert(
 				lines,
 				"    local part = Instance.new("
-					.. string.format("%q", obj.ClassName)
+					.. quote(obj.ClassName)
 					.. ")"
 			)
 
-			table.insert(lines, "    part.Name = " .. string.format("%q", obj.Name))
-
-			-- Exact world properties
-			table.insert(lines, "    part.CFrame = " .. cf(obj.CFrame))
-			table.insert(lines, "    part.Size = " .. vec3(obj.Size))
-
-			table.insert(lines, "    part.Color = " .. color(obj.Color))
-			table.insert(lines, "    part.Material = Enum.Material." .. obj.Material.Name)
-
-			table.insert(lines, "    part.Transparency = " .. n(obj.Transparency))
-			table.insert(lines, "    part.Reflectance = " .. n(obj.Reflectance))
-
+			table.insert(lines, "    part.Name = " .. quote(obj.Name))
+			table.insert(lines, "    part.Size = " .. vector3(obj.Size))
+			table.insert(lines, "    part.CFrame = " .. cframe(obj.CFrame))
+			table.insert(lines, "    part.Color = " .. color3(obj.Color))
+			table.insert(lines, "    part.Material = " .. materialString(obj.Material))
+			table.insert(lines, "    part.Transparency = " .. num(obj.Transparency))
+			table.insert(lines, "    part.Reflectance = " .. num(obj.Reflectance))
 			table.insert(lines, "    part.Anchored = " .. tostring(obj.Anchored))
 			table.insert(lines, "    part.CanCollide = " .. tostring(obj.CanCollide))
 			table.insert(lines, "    part.CanTouch = " .. tostring(obj.CanTouch))
@@ -85,65 +363,11 @@ local function generateSpawnCode(model)
 			end
 
 			if obj:IsA("MeshPart") then
-				table.insert(lines, "    part.MeshId = " .. string.format("%q", obj.MeshId))
-				table.insert(lines, "    part.TextureID = " .. string.format("%q", obj.TextureID))
+				table.insert(lines, "    part.MeshId = " .. quote(obj.MeshId))
+				table.insert(lines, "    part.TextureID = " .. quote(obj.TextureID))
 			end
 
 			table.insert(lines, "    part.Parent = model")
-			table.insert(lines, "end")
-			table.insert(lines, "")
-		end
-	end
-
-	------------------------------------------------------------
-	-- Decals
-	------------------------------------------------------------
-
-	for _, obj in ipairs(model:GetDescendants()) do
-		if obj:IsA("Decal") and obj.Parent then
-
-			table.insert(lines, "do")
-			table.insert(lines, "    local decal = Instance.new(\"Decal\")")
-			table.insert(lines, "    decal.Name = " .. string.format("%q", obj.Name))
-			table.insert(lines, "    decal.Texture = " .. string.format("%q", obj.Texture))
-			table.insert(lines, "    decal.Transparency = " .. n(obj.Transparency))
-			table.insert(lines, "    decal.Face = Enum.NormalId." .. obj.Face.Name)
-
-			table.insert(
-				lines,
-				"    decal.Parent = model:FindFirstChild("
-					.. string.format("%q", obj.Parent.Name)
-					.. ", true)"
-			)
-
-			table.insert(lines, "end")
-			table.insert(lines, "")
-		end
-	end
-
-	------------------------------------------------------------
-	-- Textures
-	------------------------------------------------------------
-
-	for _, obj in ipairs(model:GetDescendants()) do
-		if obj:IsA("Texture") and obj.Parent then
-
-			table.insert(lines, "do")
-			table.insert(lines, "    local texture = Instance.new(\"Texture\")")
-			table.insert(lines, "    texture.Name = " .. string.format("%q", obj.Name))
-			table.insert(lines, "    texture.Texture = " .. string.format("%q", obj.Texture))
-			table.insert(lines, "    texture.Transparency = " .. n(obj.Transparency))
-			table.insert(lines, "    texture.Face = Enum.NormalId." .. obj.Face.Name)
-			table.insert(lines, "    texture.StudsPerTileU = " .. n(obj.StudsPerTileU))
-			table.insert(lines, "    texture.StudsPerTileV = " .. n(obj.StudsPerTileV))
-
-			table.insert(
-				lines,
-				"    texture.Parent = model:FindFirstChild("
-					.. string.format("%q", obj.Parent.Name)
-					.. ", true)"
-			)
-
 			table.insert(lines, "end")
 			table.insert(lines, "")
 		end
@@ -154,22 +378,144 @@ local function generateSpawnCode(model)
 	------------------------------------------------------------
 
 	for _, obj in ipairs(model:GetDescendants()) do
-		if obj:IsA("Attachment") and obj.Parent then
 
-			table.insert(lines, "do")
-			table.insert(lines, "    local attachment = Instance.new(\"Attachment\")")
-			table.insert(lines, "    attachment.Name = " .. string.format("%q", obj.Name))
-			table.insert(lines, "    attachment.CFrame = " .. cf(obj.CFrame))
+		if obj:IsA("Attachment") then
 
-			table.insert(
-				lines,
-				"    attachment.Parent = model:FindFirstChild("
-					.. string.format("%q", obj.Parent.Name)
-					.. ", true)"
-			)
+			local parent = obj.Parent
 
-			table.insert(lines, "end")
-			table.insert(lines, "")
+			if parent and parent:IsA("BasePart") then
+
+				table.insert(lines, "-- Attachment: " .. obj.Name)
+				table.insert(lines, "do")
+
+				table.insert(
+					lines,
+					"    local attachment = Instance.new(\"Attachment\")"
+				)
+
+				table.insert(lines, "    attachment.Name = " .. quote(obj.Name))
+				table.insert(lines, "    attachment.Position = " .. vector3(obj.Position))
+				table.insert(lines, "    attachment.Orientation = " .. vector3(obj.Orientation))
+
+				table.insert(
+					lines,
+					"    attachment.Parent = model:FindFirstChild("
+						.. quote(parent.Name)
+						.. ", true)"
+				)
+
+				table.insert(lines, "end")
+				table.insert(lines, "")
+			end
+		end
+	end
+
+	------------------------------------------------------------
+	-- Decals
+	------------------------------------------------------------
+
+	for _, obj in ipairs(model:GetDescendants()) do
+
+		if obj:IsA("Decal") then
+
+			local parent = obj.Parent
+
+			if parent and parent:IsA("BasePart") then
+
+				table.insert(lines, "-- Decal: " .. obj.Name)
+				table.insert(lines, "do")
+
+				table.insert(lines, "    local decal = Instance.new(\"Decal\")")
+				table.insert(lines, "    decal.Name = " .. quote(obj.Name))
+				table.insert(lines, "    decal.Texture = " .. quote(obj.Texture))
+				table.insert(lines, "    decal.Transparency = " .. num(obj.Transparency))
+				table.insert(lines, "    decal.Face = Enum.NormalId." .. obj.Face.Name)
+
+				table.insert(
+					lines,
+					"    decal.Parent = model:FindFirstChild("
+						.. quote(parent.Name)
+						.. ", true)"
+				)
+
+				table.insert(lines, "end")
+				table.insert(lines, "")
+			end
+		end
+	end
+
+	------------------------------------------------------------
+	-- Textures
+	------------------------------------------------------------
+
+	for _, obj in ipairs(model:GetDescendants()) do
+
+		if obj:IsA("Texture") then
+
+			local parent = obj.Parent
+
+			if parent and parent:IsA("BasePart") then
+
+				table.insert(lines, "-- Texture: " .. obj.Name)
+				table.insert(lines, "do")
+
+				table.insert(lines, "    local texture = Instance.new(\"Texture\")")
+				table.insert(lines, "    texture.Name = " .. quote(obj.Name))
+				table.insert(lines, "    texture.Texture = " .. quote(obj.Texture))
+				table.insert(lines, "    texture.Transparency = " .. num(obj.Transparency))
+				table.insert(lines, "    texture.Face = Enum.NormalId." .. obj.Face.Name)
+				table.insert(lines, "    texture.StudsPerTileU = " .. num(obj.StudsPerTileU))
+				table.insert(lines, "    texture.StudsPerTileV = " .. num(obj.StudsPerTileV))
+
+				table.insert(
+					lines,
+					"    texture.Parent = model:FindFirstChild("
+						.. quote(parent.Name)
+						.. ", true)"
+				)
+
+				table.insert(lines, "end")
+				table.insert(lines, "")
+			end
+		end
+	end
+
+	------------------------------------------------------------
+	-- SurfaceAppearance
+	------------------------------------------------------------
+
+	for _, obj in ipairs(model:GetDescendants()) do
+
+		if obj:IsA("SurfaceAppearance") then
+
+			local parent = obj.Parent
+
+			if parent then
+
+				table.insert(lines, "-- SurfaceAppearance")
+				table.insert(lines, "do")
+
+				table.insert(
+					lines,
+					"    local surface = Instance.new(\"SurfaceAppearance\")"
+				)
+
+				table.insert(lines, "    surface.AlphaMode = Enum.AlphaMode." .. obj.AlphaMode.Name)
+				table.insert(lines, "    surface.ColorMap = " .. quote(obj.ColorMap))
+				table.insert(lines, "    surface.MetalnessMap = " .. quote(obj.MetalnessMap))
+				table.insert(lines, "    surface.NormalMap = " .. quote(obj.NormalMap))
+				table.insert(lines, "    surface.RoughnessMap = " .. quote(obj.RoughnessMap))
+
+				table.insert(
+					lines,
+					"    surface.Parent = model:FindFirstChild("
+						.. quote(parent.Name)
+						.. ", true)"
+				)
+
+				table.insert(lines, "end")
+				table.insert(lines, "")
+			end
 		end
 	end
 
@@ -178,17 +524,20 @@ local function generateSpawnCode(model)
 	------------------------------------------------------------
 
 	for _, obj in ipairs(model:GetDescendants()) do
+
 		if obj:IsA("WeldConstraint") then
 
+			table.insert(lines, "-- WeldConstraint: " .. obj.Name)
 			table.insert(lines, "do")
+
 			table.insert(lines, "    local weld = Instance.new(\"WeldConstraint\")")
-			table.insert(lines, "    weld.Name = " .. string.format("%q", obj.Name))
+			table.insert(lines, "    weld.Name = " .. quote(obj.Name))
 
 			if obj.Part0 then
 				table.insert(
 					lines,
 					"    weld.Part0 = model:FindFirstChild("
-						.. string.format("%q", obj.Part0.Name)
+						.. quote(obj.Part0.Name)
 						.. ", true)"
 				)
 			end
@@ -197,7 +546,7 @@ local function generateSpawnCode(model)
 				table.insert(
 					lines,
 					"    weld.Part1 = model:FindFirstChild("
-						.. string.format("%q", obj.Part1.Name)
+						.. quote(obj.Part1.Name)
 						.. ", true)"
 				)
 			end
@@ -209,27 +558,30 @@ local function generateSpawnCode(model)
 	end
 
 	------------------------------------------------------------
-	-- Weld / ManualWeld
+	-- Weld objects
 	------------------------------------------------------------
 
 	for _, obj in ipairs(model:GetDescendants()) do
+
 		if obj:IsA("Weld") or obj:IsA("ManualWeld") then
 
+			table.insert(lines, "-- Weld: " .. obj.Name)
 			table.insert(lines, "do")
+
 			table.insert(
 				lines,
 				"    local weld = Instance.new("
-					.. string.format("%q", obj.ClassName)
+					.. quote(obj.ClassName)
 					.. ")"
 			)
 
-			table.insert(lines, "    weld.Name = " .. string.format("%q", obj.Name))
+			table.insert(lines, "    weld.Name = " .. quote(obj.Name))
 
 			if obj.Part0 then
 				table.insert(
 					lines,
 					"    weld.Part0 = model:FindFirstChild("
-						.. string.format("%q", obj.Part0.Name)
+						.. quote(obj.Part0.Name)
 						.. ", true)"
 				)
 			end
@@ -238,13 +590,13 @@ local function generateSpawnCode(model)
 				table.insert(
 					lines,
 					"    weld.Part1 = model:FindFirstChild("
-						.. string.format("%q", obj.Part1.Name)
+						.. quote(obj.Part1.Name)
 						.. ", true)"
 				)
 			end
 
-			table.insert(lines, "    weld.C0 = " .. cf(obj.C0))
-			table.insert(lines, "    weld.C1 = " .. cf(obj.C1))
+			table.insert(lines, "    weld.C0 = " .. cframe(obj.C0))
+			table.insert(lines, "    weld.C1 = " .. cframe(obj.C1))
 			table.insert(lines, "    weld.Parent = model")
 
 			table.insert(lines, "end")
@@ -252,7 +604,39 @@ local function generateSpawnCode(model)
 		end
 	end
 
-	table.insert(lines, "return model")
+	table.insert(lines, "-- End generated code")
 
 	return table.concat(lines, "\n")
 end
+
+----------------------------------------------------------------
+-- Buttons
+----------------------------------------------------------------
+
+generate.Activated:Connect(function()
+
+	if not selectedModel then
+		status.Text = "Select a model first."
+		status.TextColor3 = Color3.fromRGB(230, 130, 100)
+		return
+	end
+
+	status.Text = "Generating..."
+	status.TextColor3 = Color3.fromRGB(230, 200, 100)
+
+	task.wait()
+
+	codeBox.Text = generateCode(selectedModel)
+
+	status.Text = "Code generated successfully."
+	status.TextColor3 = Color3.fromRGB(120, 220, 150)
+end)
+
+clear.Activated:Connect(function()
+	codeBox.Text = "-- Generated Lua will appear here"
+	status.Text = "Cleared"
+end)
+
+close.Activated:Connect(function()
+	main.Visible = false
+end)
