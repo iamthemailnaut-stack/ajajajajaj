@@ -1,722 +1,258 @@
---// ONE-FILE MODEL LUA GENERATOR
---// LocalScript -> StarterPlayerScripts
---// For testing your own Roblox experience.
+local function generateSpawnCode(model)
+	local lines = {}
 
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
+	table.insert(lines, "-- Exact model recreation")
+	table.insert(lines, "-- Original model: " .. string.format("%q", model.Name))
+	table.insert(lines, "")
+	table.insert(lines, "local model = Instance.new(\"Model\")")
+	table.insert(lines, "model.Name = " .. string.format("%q", model.Name))
+	table.insert(lines, "model.Parent = workspace")
+	table.insert(lines, "")
 
-local player = Players.LocalPlayer
-local mouse = player:GetMouse()
-
---------------------------------------------------
--- GUI
---------------------------------------------------
-
-local gui = Instance.new("ScreenGui")
-gui.Name = "ModelLuaGenerator"
-gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
-
-local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(780, 600)
-main.Position = UDim2.new(.5, -390, .5, -300)
-main.BackgroundColor3 = Color3.fromRGB(22, 23, 28)
-main.BorderSizePixel = 0
-main.Parent = gui
-
-Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-
---------------------------------------------------
--- TITLE / DRAG
---------------------------------------------------
-
-local top = Instance.new("Frame")
-top.Size = UDim2.new(1, 0, 0, 52)
-top.BackgroundColor3 = Color3.fromRGB(34, 35, 42)
-top.BorderSizePixel = 0
-top.Parent = main
-
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -20, 1, 0)
-title.Position = UDim2.fromOffset(15, 0)
-title.BackgroundTransparency = 1
-title.Text = "Model Lua Generator"
-title.TextColor3 = Color3.new(1, 1, 1)
-title.TextSize = 18
-title.Font = Enum.Font.GothamBold
-title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = top
-
-local dragging = false
-local dragStart
-local startPos
-
-top.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = true
-		dragStart = input.Position
-		startPos = main.Position
-	end
-end)
-
-UIS.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		local d = input.Position - dragStart
-
-		main.Position = UDim2.new(
-			startPos.X.Scale,
-			startPos.X.Offset + d.X,
-			startPos.Y.Scale,
-			startPos.Y.Offset + d.Y
-		)
-	end
-end)
-
-UIS.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragging = false
-	end
-end)
-
---------------------------------------------------
--- STATUS
---------------------------------------------------
-
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -30, 0, 30)
-status.Position = UDim2.fromOffset(15, 62)
-status.BackgroundTransparency = 1
-status.Text = "Ready"
-status.TextColor3 = Color3.fromRGB(140, 210, 150)
-status.TextSize = 13
-status.Font = Enum.Font.Gotham
-status.TextXAlignment = Enum.TextXAlignment.Left
-status.Parent = main
-
---------------------------------------------------
--- BUTTON FUNCTION
---------------------------------------------------
-
-local function button(text, x, y, width)
-	local b = Instance.new("TextButton")
-
-	b.Size = UDim2.fromOffset(width, 40)
-	b.Position = UDim2.fromOffset(x, y)
-
-	b.BackgroundColor3 = Color3.fromRGB(62, 94, 175)
-	b.Text = text
-	b.TextColor3 = Color3.new(1, 1, 1)
-	b.TextSize = 12
-	b.Font = Enum.Font.GothamMedium
-
-	b.Parent = main
-
-	Instance.new("UICorner", b).CornerRadius =
-		UDim.new(0, 7)
-
-	return b
-end
-
-local selectedButton =
-	button("Selected", 15, 105, 115)
-
-local modelsButton =
-	button("All Models", 140, 105, 115)
-
-local partsButton =
-	button("All Parts", 265, 105, 115)
-
-local workspaceButton =
-	button("Workspace", 390, 105, 115)
-
-local copyButton =
-	button("Copy Code", 515, 105, 115)
-
-local clearButton =
-	button("Clear", 640, 105, 115)
-
---------------------------------------------------
--- OPTIONS
---------------------------------------------------
-
-local unionButton =
-	button("Unions: Keep", 15, 153, 140)
-
-local includeDecals =
-	button("Decals: Yes", 165, 153, 140)
-
-local includeWelds =
-	button("Welds: Yes", 315, 153, 140)
-
-local skipUnions = false
-local decals = true
-local welds = true
-
-unionButton.Activated:Connect(function()
-	skipUnions = not skipUnions
-	unionButton.Text =
-		skipUnions and "Unions: Skip" or "Unions: Keep"
-end)
-
-includeDecals.Activated:Connect(function()
-	decals = not decals
-	includeDecals.Text =
-		decals and "Decals: Yes" or "Decals: No"
-end)
-
-includeWelds.Activated:Connect(function()
-	welds = not welds
-	includeWelds.Text =
-		welds and "Welds: Yes" or "Welds: No"
-end)
-
---------------------------------------------------
--- CODE BOX
---------------------------------------------------
-
-local code = Instance.new("TextBox")
-code.Size = UDim2.new(1, -30, 1, -235)
-code.Position = UDim2.fromOffset(15, 205)
-
-code.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
-code.BorderSizePixel = 0
-
-code.TextColor3 = Color3.fromRGB(225, 228, 235)
-code.TextSize = 12
-code.Font = Enum.Font.Code
-
-code.MultiLine = true
-code.ClearTextOnFocus = false
-code.TextWrapped = false
-
-code.TextXAlignment = Enum.TextXAlignment.Left
-code.TextYAlignment = Enum.TextYAlignment.Top
-
-code.Text = "-- Lua will appear here."
-
-code.Parent = main
-
-Instance.new("UICorner", code).CornerRadius =
-	UDim.new(0, 8)
-
-local pad = Instance.new("UIPadding")
-pad.PaddingTop = UDim.new(0, 10)
-pad.PaddingLeft = UDim.new(0, 10)
-code.Parent = main
-pad.Parent = code
-
---------------------------------------------------
--- HELPERS
---------------------------------------------------
-
-local function q(v)
-	return string.format("%q", tostring(v))
-end
-
-local function n(v)
-	return string.format("%.5f", v)
-end
-
-local function vector(v)
-	return string.format(
-		"Vector3.new(%s,%s,%s)",
-		n(v.X), n(v.Y), n(v.Z)
-	)
-end
-
-local function cframe(v)
-	local x,y,z,
-		r00,r01,r02,
-		r10,r11,r12,
-		r20,r21,r22 = v:GetComponents()
-
-	return string.format(
-		"CFrame.new(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-		n(x), n(y), n(z),
-		n(r00), n(r01), n(r02),
-		n(r10), n(r11), n(r12),
-		n(r20), n(r21), n(r22)
-	)
-end
-
-local function color(v)
-	return string.format(
-		"Color3.fromRGB(%d,%d,%d)",
-		math.round(v.R * 255),
-		math.round(v.G * 255),
-		math.round(v.B * 255)
-	)
-end
-
---------------------------------------------------
--- COLLECT
---------------------------------------------------
-
-local function collect(root)
-
-	local result = {}
-
-	if root ~= workspace then
-		table.insert(result, root)
+	local function n(v)
+		return string.format("%.6f", v)
 	end
 
-	for _, obj in ipairs(root:GetDescendants()) do
-
-		if skipUnions and obj:IsA("UnionOperation") then
-			continue
-		end
-
-		if obj:IsA("Decal") or obj:IsA("Texture") then
-			if decals then
-				table.insert(result, obj)
-			end
-
-		elseif obj:IsA("Weld")
-			or obj:IsA("ManualWeld")
-			or obj:IsA("WeldConstraint") then
-
-			if welds then
-				table.insert(result, obj)
-			end
-
-		elseif obj:IsA("Model")
-			or obj:IsA("Folder")
-			or obj:IsA("BasePart")
-			or obj:IsA("Attachment")
-			or obj:IsA("SurfaceAppearance") then
-
-			table.insert(result, obj)
-		end
-
-	end
-
-	return result
-end
-
---------------------------------------------------
--- GENERATOR
---------------------------------------------------
-
-local function generate(root)
-
-	local objects = collect(root)
-
-	if #objects > 10000 then
-		return "-- Too many objects. Generation stopped."
-	end
-
-	local ids = {}
-
-	for i, obj in ipairs(objects) do
-		ids[obj] = "i" .. i
-	end
-
-	local out = {}
-
-	table.insert(out, "-- Generated Lua")
-	table.insert(out, "-- Source: " .. root:GetFullName())
-	table.insert(out, "")
-	table.insert(out, "local i = {}")
-	table.insert(out, "")
-
-	--------------------------------------------------
-	-- CREATE
-	--------------------------------------------------
-
-	for _, obj in ipairs(objects) do
-
-		local id = ids[obj]
-
-		table.insert(
-			out,
-			"i." .. id ..
-			" = Instance.new(" ..
-			q(obj.ClassName) ..
-			")"
-		)
-
-		table.insert(
-			out,
-			"i." .. id ..
-			".Name = " ..
-			q(obj.Name)
+	local function vec3(v)
+		return string.format(
+			"Vector3.new(%s, %s, %s)",
+			n(v.X), n(v.Y), n(v.Z)
 		)
 	end
 
-	table.insert(out, "")
+	local function cf(v)
+		local x, y, z,
+			r00, r01, r02,
+			r10, r11, r12,
+			r20, r21, r22 = v:GetComponents()
 
-	--------------------------------------------------
-	-- PROPERTIES
-	--------------------------------------------------
+		return string.format(
+			"CFrame.new(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+			n(x), n(y), n(z),
+			n(r00), n(r01), n(r02),
+			n(r10), n(r11), n(r12),
+			n(r20), n(r21), n(r22)
+		)
+	end
 
-	for _, obj in ipairs(objects) do
+	local function color(c)
+		return string.format(
+			"Color3.fromRGB(%d, %d, %d)",
+			math.round(c.R * 255),
+			math.round(c.G * 255),
+			math.round(c.B * 255)
+		)
+	end
 
-		local id = ids[obj]
+	------------------------------------------------------------
+	-- Parts
+	------------------------------------------------------------
 
+	for _, obj in ipairs(model:GetDescendants()) do
 		if obj:IsA("BasePart") then
 
+			table.insert(lines, "do")
 			table.insert(
-				out,
-				"i." .. id ..
-				".CFrame = " ..
-				cframe(obj.CFrame)
+				lines,
+				"    local part = Instance.new("
+					.. string.format("%q", obj.ClassName)
+					.. ")"
 			)
 
-			table.insert(
-				out,
-				"i." .. id ..
-				".Size = " ..
-				vector(obj.Size)
-			)
+			table.insert(lines, "    part.Name = " .. string.format("%q", obj.Name))
 
-			table.insert(
-				out,
-				"i." .. id ..
-				".Color = " ..
-				color(obj.Color)
-			)
+			-- Exact world properties
+			table.insert(lines, "    part.CFrame = " .. cf(obj.CFrame))
+			table.insert(lines, "    part.Size = " .. vec3(obj.Size))
 
-			table.insert(
-				out,
-				"i." .. id ..
-				".Material = Enum.Material." ..
-				obj.Material.Name
-			)
+			table.insert(lines, "    part.Color = " .. color(obj.Color))
+			table.insert(lines, "    part.Material = Enum.Material." .. obj.Material.Name)
 
-			table.insert(
-				out,
-				"i." .. id ..
-				".Transparency = " ..
-				n(obj.Transparency)
-			)
+			table.insert(lines, "    part.Transparency = " .. n(obj.Transparency))
+			table.insert(lines, "    part.Reflectance = " .. n(obj.Reflectance))
 
-			table.insert(
-				out,
-				"i." .. id ..
-				".Anchored = " ..
-				tostring(obj.Anchored)
-			)
+			table.insert(lines, "    part.Anchored = " .. tostring(obj.Anchored))
+			table.insert(lines, "    part.CanCollide = " .. tostring(obj.CanCollide))
+			table.insert(lines, "    part.CanTouch = " .. tostring(obj.CanTouch))
+			table.insert(lines, "    part.CanQuery = " .. tostring(obj.CanQuery))
+			table.insert(lines, "    part.CastShadow = " .. tostring(obj.CastShadow))
 
-			table.insert(
-				out,
-				"i." .. id ..
-				".CanCollide = " ..
-				tostring(obj.CanCollide)
-			)
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".CanTouch = " ..
-				tostring(obj.CanTouch)
-			)
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".CanQuery = " ..
-				tostring(obj.CanQuery)
-			)
+			if obj:IsA("Part") then
+				table.insert(
+					lines,
+					"    part.Shape = Enum.PartType." .. obj.Shape.Name
+				)
+			end
 
 			if obj:IsA("MeshPart") then
-
-				table.insert(
-					out,
-					"i." .. id ..
-					".MeshId = " ..
-					q(obj.MeshId)
-				)
-
-				table.insert(
-					out,
-					"i." .. id ..
-					".TextureID = " ..
-					q(obj.TextureID)
-				)
-
-			elseif obj:IsA("Part") then
-
-				table.insert(
-					out,
-					"i." .. id ..
-					".Shape = Enum.PartType." ..
-					obj.Shape.Name
-				)
-
+				table.insert(lines, "    part.MeshId = " .. string.format("%q", obj.MeshId))
+				table.insert(lines, "    part.TextureID = " .. string.format("%q", obj.TextureID))
 			end
 
-		elseif obj:IsA("Decal")
-			or obj:IsA("Texture") then
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".Texture = " ..
-				q(obj.Texture)
-			)
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".Face = Enum.NormalId." ..
-				obj.Face.Name
-			)
-
-		elseif obj:IsA("Attachment") then
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".CFrame = " ..
-				cframe(obj.CFrame)
-			)
-
-		elseif obj:IsA("SurfaceAppearance") then
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".ColorMap = " ..
-				q(obj.ColorMap)
-			)
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".NormalMap = " ..
-				q(obj.NormalMap)
-			)
-
-		elseif obj:IsA("WeldConstraint") then
-
-			if ids[obj.Part0] then
-				table.insert(
-					out,
-					"i." .. id ..
-					".Part0 = i." ..
-					ids[obj.Part0]
-				)
-			end
-
-			if ids[obj.Part1] then
-				table.insert(
-					out,
-					"i." .. id ..
-					".Part1 = i." ..
-					ids[obj.Part1]
-				)
-			end
-
-		elseif obj:IsA("Weld")
-			or obj:IsA("ManualWeld") then
-
-			if ids[obj.Part0] then
-				table.insert(
-					out,
-					"i." .. id ..
-					".Part0 = i." ..
-					ids[obj.Part0]
-				)
-			end
-
-			if ids[obj.Part1] then
-				table.insert(
-					out,
-					"i." .. id ..
-					".Part1 = i." ..
-					ids[obj.Part1]
-				)
-			end
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".C0 = " ..
-				cframe(obj.C0)
-			)
-
-			table.insert(
-				out,
-				"i." .. id ..
-				".C1 = " ..
-				cframe(obj.C1)
-			)
+			table.insert(lines, "    part.Parent = model")
+			table.insert(lines, "end")
+			table.insert(lines, "")
 		end
 	end
 
-	--------------------------------------------------
-	-- PARENTS
-	--------------------------------------------------
+	------------------------------------------------------------
+	-- Decals
+	------------------------------------------------------------
 
-	for _, obj in ipairs(objects) do
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("Decal") and obj.Parent then
 
-		local id = ids[obj]
-
-		if obj == root then
+			table.insert(lines, "do")
+			table.insert(lines, "    local decal = Instance.new(\"Decal\")")
+			table.insert(lines, "    decal.Name = " .. string.format("%q", obj.Name))
+			table.insert(lines, "    decal.Texture = " .. string.format("%q", obj.Texture))
+			table.insert(lines, "    decal.Transparency = " .. n(obj.Transparency))
+			table.insert(lines, "    decal.Face = Enum.NormalId." .. obj.Face.Name)
 
 			table.insert(
-				out,
-				"i." .. id ..
-				".Parent = workspace"
+				lines,
+				"    decal.Parent = model:FindFirstChild("
+					.. string.format("%q", obj.Parent.Name)
+					.. ", true)"
 			)
 
-		else
+			table.insert(lines, "end")
+			table.insert(lines, "")
+		end
+	end
 
-			local parent = obj.Parent
+	------------------------------------------------------------
+	-- Textures
+	------------------------------------------------------------
 
-			if parent and ids[parent] then
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("Texture") and obj.Parent then
 
+			table.insert(lines, "do")
+			table.insert(lines, "    local texture = Instance.new(\"Texture\")")
+			table.insert(lines, "    texture.Name = " .. string.format("%q", obj.Name))
+			table.insert(lines, "    texture.Texture = " .. string.format("%q", obj.Texture))
+			table.insert(lines, "    texture.Transparency = " .. n(obj.Transparency))
+			table.insert(lines, "    texture.Face = Enum.NormalId." .. obj.Face.Name)
+			table.insert(lines, "    texture.StudsPerTileU = " .. n(obj.StudsPerTileU))
+			table.insert(lines, "    texture.StudsPerTileV = " .. n(obj.StudsPerTileV))
+
+			table.insert(
+				lines,
+				"    texture.Parent = model:FindFirstChild("
+					.. string.format("%q", obj.Parent.Name)
+					.. ", true)"
+			)
+
+			table.insert(lines, "end")
+			table.insert(lines, "")
+		end
+	end
+
+	------------------------------------------------------------
+	-- Attachments
+	------------------------------------------------------------
+
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("Attachment") and obj.Parent then
+
+			table.insert(lines, "do")
+			table.insert(lines, "    local attachment = Instance.new(\"Attachment\")")
+			table.insert(lines, "    attachment.Name = " .. string.format("%q", obj.Name))
+			table.insert(lines, "    attachment.CFrame = " .. cf(obj.CFrame))
+
+			table.insert(
+				lines,
+				"    attachment.Parent = model:FindFirstChild("
+					.. string.format("%q", obj.Parent.Name)
+					.. ", true)"
+			)
+
+			table.insert(lines, "end")
+			table.insert(lines, "")
+		end
+	end
+
+	------------------------------------------------------------
+	-- WeldConstraints
+	------------------------------------------------------------
+
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("WeldConstraint") then
+
+			table.insert(lines, "do")
+			table.insert(lines, "    local weld = Instance.new(\"WeldConstraint\")")
+			table.insert(lines, "    weld.Name = " .. string.format("%q", obj.Name))
+
+			if obj.Part0 then
 				table.insert(
-					out,
-					"i." .. id ..
-					".Parent = i." ..
-					ids[parent]
+					lines,
+					"    weld.Part0 = model:FindFirstChild("
+						.. string.format("%q", obj.Part0.Name)
+						.. ", true)"
 				)
-
 			end
+
+			if obj.Part1 then
+				table.insert(
+					lines,
+					"    weld.Part1 = model:FindFirstChild("
+						.. string.format("%q", obj.Part1.Name)
+						.. ", true)"
+				)
+			end
+
+			table.insert(lines, "    weld.Parent = model")
+			table.insert(lines, "end")
+			table.insert(lines, "")
 		end
 	end
 
-	table.insert(out, "")
-	table.insert(out, "return i." .. ids[root])
+	------------------------------------------------------------
+	-- Weld / ManualWeld
+	------------------------------------------------------------
 
-	return table.concat(out, "\n")
-end
+	for _, obj in ipairs(model:GetDescendants()) do
+		if obj:IsA("Weld") or obj:IsA("ManualWeld") then
 
---------------------------------------------------
--- TARGET
---------------------------------------------------
+			table.insert(lines, "do")
+			table.insert(
+				lines,
+				"    local weld = Instance.new("
+					.. string.format("%q", obj.ClassName)
+					.. ")"
+			)
 
-local function getTarget()
+			table.insert(lines, "    weld.Name = " .. string.format("%q", obj.Name))
 
-	local target = mouse.Target
+			if obj.Part0 then
+				table.insert(
+					lines,
+					"    weld.Part0 = model:FindFirstChild("
+						.. string.format("%q", obj.Part0.Name)
+						.. ", true)"
+				)
+			end
 
-	if not target then
-		return nil
-	end
+			if obj.Part1 then
+				table.insert(
+					lines,
+					"    weld.Part1 = model:FindFirstChild("
+						.. string.format("%q", obj.Part1.Name)
+						.. ", true)"
+				)
+			end
 
-	local model =
-		target:FindFirstAncestorOfClass("Model")
+			table.insert(lines, "    weld.C0 = " .. cf(obj.C0))
+			table.insert(lines, "    weld.C1 = " .. cf(obj.C1))
+			table.insert(lines, "    weld.Parent = model")
 
-	return model or target
-end
-
---------------------------------------------------
--- GENERATE
---------------------------------------------------
-
-local function doGenerate(root)
-
-	if not root then
-
-		status.Text =
-			"Nothing selected."
-
-		return
-	end
-
-	status.Text = "Generating..."
-
-	task.wait()
-
-	local success, result =
-		pcall(function()
-			return generate(root)
-		end)
-
-	if success then
-
-		code.Text = result
-
-		status.Text =
-			"Generated successfully."
-
-	else
-
-		code.Text =
-			"-- ERROR\n\n" ..
-			tostring(result)
-
-		status.Text =
-			"Generation failed."
-	end
-end
-
---------------------------------------------------
--- BUTTONS
---------------------------------------------------
-
-selectedButton.Activated:Connect(function()
-
-	doGenerate(getTarget())
-
-end)
-
-modelsButton.Activated:Connect(function()
-
-	doGenerate(workspace)
-
-end)
-
-partsButton.Activated:Connect(function()
-
-	local folder = Instance.new("Folder")
-	folder.Name = "PartsForGeneration"
-
-	for _, obj in ipairs(workspace:GetDescendants()) do
-
-		if obj:IsA("BasePart") then
-
-			-- Only create references for generation;
-			-- don't clone or parent anything.
-			local marker = Instance.new("ObjectValue")
-			marker.Name = obj.Name
-			marker.Value = obj
-			marker.Parent = folder
-
+			table.insert(lines, "end")
+			table.insert(lines, "")
 		end
 	end
 
-	-- Generate directly from Workspace instead of
-	-- attempting to copy/parent parts.
-	local success, result =
-		pcall(function()
-			return generate(workspace)
-		end)
+	table.insert(lines, "return model")
 
-	folder:Destroy()
-
-	if success then
-		code.Text = result
-		status.Text = "Parts/workspace generated."
-	else
-		code.Text = "-- ERROR\n\n" .. tostring(result)
-		status.Text = "Generation failed."
-	end
-
-end)
-
-workspaceButton.Activated:Connect(function()
-
-	doGenerate(workspace)
-
-end)
-
-clearButton.Activated:Connect(function()
-
-	code.Text = ""
-	status.Text = "Cleared."
-
-end)
-
-copyButton.Activated:Connect(function()
-
-	-- Roblox does not expose arbitrary clipboard
-	-- writing to normal LocalScripts.
-	code:CaptureFocus()
-	code.CursorPosition = #code.Text + 1
-
-	status.Text =
-		"Code box focused — use Ctrl+A / Ctrl+C."
-
-end)
+	return table.concat(lines, "\n")
+end
