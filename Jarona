@@ -1,106 +1,109 @@
---// MODEL / WORKSPACE COPY TOOL
+--// ONE-FILE MODEL LUA GENERATOR
 --// LocalScript -> StarterPlayerScripts
---// For use in your own Roblox experience.
+--// For testing your own Roblox experience.
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 
-------------------------------------------------------------
+--------------------------------------------------
 -- GUI
-------------------------------------------------------------
+--------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "ModelCopyTool"
+gui.Name = "ModelLuaGenerator"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(720, 560)
-main.Position = UDim2.new(0.5, -360, 0.5, -280)
-main.BackgroundColor3 = Color3.fromRGB(24, 24, 29)
+main.Size = UDim2.fromOffset(780, 600)
+main.Position = UDim2.new(.5, -390, .5, -300)
+main.BackgroundColor3 = Color3.fromRGB(22, 23, 28)
 main.BorderSizePixel = 0
 main.Parent = gui
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = main
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 
-------------------------------------------------------------
--- TITLE BAR
-------------------------------------------------------------
+--------------------------------------------------
+-- TITLE / DRAG
+--------------------------------------------------
 
-local bar = Instance.new("Frame")
-bar.Size = UDim2.new(1, 0, 0, 50)
-bar.BackgroundColor3 = Color3.fromRGB(35, 35, 43)
-bar.BorderSizePixel = 0
-bar.Parent = main
+local top = Instance.new("Frame")
+top.Size = UDim2.new(1, 0, 0, 52)
+top.BackgroundColor3 = Color3.fromRGB(34, 35, 42)
+top.BorderSizePixel = 0
+top.Parent = main
 
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -60, 1, 0)
-title.Position = UDim2.fromOffset(16, 0)
+title.Size = UDim2.new(1, -20, 1, 0)
+title.Position = UDim2.fromOffset(15, 0)
 title.BackgroundTransparency = 1
-title.Text = "Model Copy / Lua Generator"
+title.Text = "Model Lua Generator"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.TextSize = 18
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
-title.Parent = bar
+title.Parent = top
 
-local close = Instance.new("TextButton")
-close.Size = UDim2.fromOffset(38, 38)
-close.Position = UDim2.new(1, -44, 0, 6)
-close.BackgroundColor3 = Color3.fromRGB(185, 55, 65)
-close.Text = "×"
-close.TextColor3 = Color3.new(1, 1, 1)
-close.TextSize = 24
-close.Font = Enum.Font.GothamBold
-close.Parent = bar
+local dragging = false
+local dragStart
+local startPos
 
-Instance.new("UICorner", close).CornerRadius = UDim.new(0, 8)
+top.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = main.Position
+	end
+end)
 
-------------------------------------------------------------
--- SELECTION
-------------------------------------------------------------
+UIS.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local d = input.Position - dragStart
 
-local selectionLabel = Instance.new("TextLabel")
-selectionLabel.Size = UDim2.new(1, -30, 0, 32)
-selectionLabel.Position = UDim2.fromOffset(15, 60)
-selectionLabel.BackgroundTransparency = 1
-selectionLabel.Text = "Selected: Nothing"
-selectionLabel.TextColor3 = Color3.fromRGB(225, 225, 230)
-selectionLabel.TextSize = 14
-selectionLabel.Font = Enum.Font.GothamMedium
-selectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-selectionLabel.Parent = main
+		main.Position = UDim2.new(
+			startPos.X.Scale,
+			startPos.X.Offset + d.X,
+			startPos.Y.Scale,
+			startPos.Y.Offset + d.Y
+		)
+	end
+end)
+
+UIS.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+--------------------------------------------------
+-- STATUS
+--------------------------------------------------
 
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -30, 0, 25)
-status.Position = UDim2.fromOffset(15, 88)
+status.Size = UDim2.new(1, -30, 0, 30)
+status.Position = UDim2.fromOffset(15, 62)
 status.BackgroundTransparency = 1
-status.Text = "Click a Model or Part."
-status.TextColor3 = Color3.fromRGB(140, 140, 150)
-status.TextSize = 12
+status.Text = "Ready"
+status.TextColor3 = Color3.fromRGB(140, 210, 150)
+status.TextSize = 13
 status.Font = Enum.Font.Gotham
 status.TextXAlignment = Enum.TextXAlignment.Left
 status.Parent = main
 
-------------------------------------------------------------
--- BUTTON HELPER
-------------------------------------------------------------
+--------------------------------------------------
+-- BUTTON FUNCTION
+--------------------------------------------------
 
-local function button(text, x, y, w)
-
+local function button(text, x, y, width)
 	local b = Instance.new("TextButton")
 
-	b.Size = UDim2.fromOffset(w, 38)
+	b.Size = UDim2.fromOffset(width, 40)
 	b.Position = UDim2.fromOffset(x, y)
 
-	b.BackgroundColor3 = Color3.fromRGB(60, 95, 180)
-
+	b.BackgroundColor3 = Color3.fromRGB(62, 94, 175)
 	b.Text = text
 	b.TextColor3 = Color3.new(1, 1, 1)
 	b.TextSize = 12
@@ -108,562 +111,453 @@ local function button(text, x, y, w)
 
 	b.Parent = main
 
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(0, 7)
-	c.Parent = b
+	Instance.new("UICorner", b).CornerRadius =
+		UDim.new(0, 7)
 
 	return b
 end
 
-local generateButton =
-	button("Generate Lua", 15, 125, 140)
+local selectedButton =
+	button("Selected", 15, 105, 115)
+
+local modelsButton =
+	button("All Models", 140, 105, 115)
+
+local partsButton =
+	button("All Parts", 265, 105, 115)
+
+local workspaceButton =
+	button("Workspace", 390, 105, 115)
 
 local copyButton =
-	button("Copy Selected", 165, 125, 140)
+	button("Copy Code", 515, 105, 115)
 
-local workspaceModels =
-	button("Copy Models", 315, 125, 130)
+local clearButton =
+	button("Clear", 640, 105, 115)
 
-local workspaceParts =
-	button("Copy Parts", 455, 125, 130)
-
-local copyWorkspace =
-	button("Copy Workspace", 595, 125, 110)
+--------------------------------------------------
+-- OPTIONS
+--------------------------------------------------
 
 local unionButton =
-	button("Unions: Keep", 15, 172, 140)
+	button("Unions: Keep", 15, 153, 140)
+
+local includeDecals =
+	button("Decals: Yes", 165, 153, 140)
+
+local includeWelds =
+	button("Welds: Yes", 315, 153, 140)
 
 local skipUnions = false
+local decals = true
+local welds = true
 
 unionButton.Activated:Connect(function()
-
 	skipUnions = not skipUnions
-
-	if skipUnions then
-
-		unionButton.Text = "Unions: Skip"
-		unionButton.BackgroundColor3 =
-			Color3.fromRGB(170, 70, 65)
-
-	else
-
-		unionButton.Text = "Unions: Keep"
-		unionButton.BackgroundColor3 =
-			Color3.fromRGB(60, 95, 180)
-
-	end
-
+	unionButton.Text =
+		skipUnions and "Unions: Skip" or "Unions: Keep"
 end)
 
-------------------------------------------------------------
+includeDecals.Activated:Connect(function()
+	decals = not decals
+	includeDecals.Text =
+		decals and "Decals: Yes" or "Decals: No"
+end)
+
+includeWelds.Activated:Connect(function()
+	welds = not welds
+	includeWelds.Text =
+		welds and "Welds: Yes" or "Welds: No"
+end)
+
+--------------------------------------------------
 -- CODE BOX
-------------------------------------------------------------
+--------------------------------------------------
 
-local codeBox = Instance.new("TextBox")
+local code = Instance.new("TextBox")
+code.Size = UDim2.new(1, -30, 1, -235)
+code.Position = UDim2.fromOffset(15, 205)
 
-codeBox.Size = UDim2.new(1, -30, 1, -270)
-codeBox.Position = UDim2.fromOffset(15, 220)
+code.BackgroundColor3 = Color3.fromRGB(10, 11, 14)
+code.BorderSizePixel = 0
 
-codeBox.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-codeBox.BorderSizePixel = 0
+code.TextColor3 = Color3.fromRGB(225, 228, 235)
+code.TextSize = 12
+code.Font = Enum.Font.Code
 
-codeBox.TextColor3 = Color3.fromRGB(220, 225, 235)
+code.MultiLine = true
+code.ClearTextOnFocus = false
+code.TextWrapped = false
 
-codeBox.TextSize = 12
-codeBox.Font = Enum.Font.Code
+code.TextXAlignment = Enum.TextXAlignment.Left
+code.TextYAlignment = Enum.TextYAlignment.Top
 
-codeBox.TextXAlignment = Enum.TextXAlignment.Left
-codeBox.TextYAlignment = Enum.TextYAlignment.Top
+code.Text = "-- Lua will appear here."
 
-codeBox.MultiLine = true
-codeBox.ClearTextOnFocus = false
-codeBox.TextWrapped = false
+code.Parent = main
 
-codeBox.Text =
-	"-- Generated Lua appears here"
+Instance.new("UICorner", code).CornerRadius =
+	UDim.new(0, 8)
 
-codeBox.Parent = main
+local pad = Instance.new("UIPadding")
+pad.PaddingTop = UDim.new(0, 10)
+pad.PaddingLeft = UDim.new(0, 10)
+code.Parent = main
+pad.Parent = code
 
-local codeCorner = Instance.new("UICorner")
-codeCorner.CornerRadius = UDim.new(0, 8)
-codeCorner.Parent = codeBox
-
-local padding = Instance.new("UIPadding")
-padding.PaddingTop = UDim.new(0, 10)
-padding.PaddingLeft = UDim.new(0, 10)
-padding.Parent = codeBox
-
-------------------------------------------------------------
--- DRAGGING
-------------------------------------------------------------
-
-local dragging = false
-local dragStart
-local startPosition
-
-bar.InputBegan:Connect(function(input)
-
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-		dragging = true
-		dragStart = input.Position
-		startPosition = main.Position
-
-	end
-
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-
-	if not dragging then
-		return
-	end
-
-	if input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-		local delta =
-			input.Position - dragStart
-
-		main.Position = UDim2.new(
-			startPosition.X.Scale,
-			startPosition.X.Offset + delta.X,
-
-			startPosition.Y.Scale,
-			startPosition.Y.Offset + delta.Y
-		)
-
-	end
-
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-
-	if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-		dragging = false
-
-	end
-
-end)
-
-close.Activated:Connect(function()
-	main.Visible = false
-end)
-
-------------------------------------------------------------
--- SELECTION
-------------------------------------------------------------
-
-local selectedModel
-
-mouse.Button1Down:Connect(function()
-
-	local target = mouse.Target
-
-	if not target then
-		return
-	end
-
-	local model =
-		target:FindFirstAncestorOfClass("Model")
-
-	if not model then
-
-		if target:IsA("BasePart") then
-			selectedModel = target
-		else
-			return
-		end
-
-	else
-
-		selectedModel = model
-
-	end
-
-	selectionLabel.Text =
-		"Selected: " .. selectedModel.Name
-
-	status.Text =
-		"Selection ready."
-
-end)
-
-------------------------------------------------------------
+--------------------------------------------------
 -- HELPERS
-------------------------------------------------------------
+--------------------------------------------------
 
 local function q(v)
-
 	return string.format("%q", tostring(v))
-
 end
 
 local function n(v)
-
-	return string.format("%.6f", v)
-
+	return string.format("%.5f", v)
 end
 
 local function vector(v)
-
 	return string.format(
 		"Vector3.new(%s,%s,%s)",
-		n(v.X),
-		n(v.Y),
-		n(v.Z)
+		n(v.X), n(v.Y), n(v.Z)
 	)
+end
 
+local function cframe(v)
+	local x,y,z,
+		r00,r01,r02,
+		r10,r11,r12,
+		r20,r21,r22 = v:GetComponents()
+
+	return string.format(
+		"CFrame.new(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+		n(x), n(y), n(z),
+		n(r00), n(r01), n(r02),
+		n(r10), n(r11), n(r12),
+		n(r20), n(r21), n(r22)
+	)
 end
 
 local function color(v)
-
 	return string.format(
 		"Color3.fromRGB(%d,%d,%d)",
 		math.round(v.R * 255),
 		math.round(v.G * 255),
 		math.round(v.B * 255)
 	)
-
 end
 
-local function cframe(v)
+--------------------------------------------------
+-- COLLECT
+--------------------------------------------------
 
-	local x,y,z,
-		r00,r01,r02,
-		r10,r11,r12,
-		r20,r21,r22 =
-		v:GetComponents()
+local function collect(root)
 
-	return string.format(
-		"CFrame.new(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-		n(x),n(y),n(z),
-		n(r00),n(r01),n(r02),
-		n(r10),n(r11),n(r12),
-		n(r20),n(r21),n(r22)
-	)
+	local result = {}
 
+	if root ~= workspace then
+		table.insert(result, root)
+	end
+
+	for _, obj in ipairs(root:GetDescendants()) do
+
+		if skipUnions and obj:IsA("UnionOperation") then
+			continue
+		end
+
+		if obj:IsA("Decal") or obj:IsA("Texture") then
+			if decals then
+				table.insert(result, obj)
+			end
+
+		elseif obj:IsA("Weld")
+			or obj:IsA("ManualWeld")
+			or obj:IsA("WeldConstraint") then
+
+			if welds then
+				table.insert(result, obj)
+			end
+
+		elseif obj:IsA("Model")
+			or obj:IsA("Folder")
+			or obj:IsA("BasePart")
+			or obj:IsA("Attachment")
+			or obj:IsA("SurfaceAppearance") then
+
+			table.insert(result, obj)
+		end
+
+	end
+
+	return result
 end
 
-------------------------------------------------------------
--- GENERATE
-------------------------------------------------------------
+--------------------------------------------------
+-- GENERATOR
+--------------------------------------------------
 
 local function generate(root)
 
-	local objects = {root}
+	local objects = collect(root)
 
-	for _, obj in ipairs(root:GetDescendants()) do
-		table.insert(objects, obj)
+	if #objects > 10000 then
+		return "-- Too many objects. Generation stopped."
 	end
 
 	local ids = {}
 
-	for index, obj in ipairs(objects) do
-		ids[obj] = "i" .. index
+	for i, obj in ipairs(objects) do
+		ids[obj] = "i" .. i
 	end
 
-	local lines = {}
+	local out = {}
 
-	table.insert(lines, "-- Generated model")
-	table.insert(lines, "-- Original: " .. root.Name)
-	table.insert(lines, "")
-	table.insert(lines, "local i = {}")
-	table.insert(lines, "")
+	table.insert(out, "-- Generated Lua")
+	table.insert(out, "-- Source: " .. root:GetFullName())
+	table.insert(out, "")
+	table.insert(out, "local i = {}")
+	table.insert(out, "")
 
-	----------------------------------------------------------
+	--------------------------------------------------
 	-- CREATE
-	----------------------------------------------------------
+	--------------------------------------------------
 
 	for _, obj in ipairs(objects) do
-
-		if obj:IsA("UnionOperation") and skipUnions then
-			continue
-		end
 
 		local id = ids[obj]
 
-		local supported =
-			obj:IsA("Model")
-			or obj:IsA("Folder")
-			or obj:IsA("BasePart")
-			or obj:IsA("Attachment")
-			or obj:IsA("Decal")
-			or obj:IsA("Texture")
-			or obj:IsA("SurfaceAppearance")
-			or obj:IsA("Weld")
-			or obj:IsA("ManualWeld")
-			or obj:IsA("WeldConstraint")
+		table.insert(
+			out,
+			"i." .. id ..
+			" = Instance.new(" ..
+			q(obj.ClassName) ..
+			")"
+		)
 
-		if supported then
-
-			table.insert(
-				lines,
-				"i." .. id
-				.. " = Instance.new("
-				.. q(obj.ClassName)
-				.. ")"
-			)
-
-			table.insert(
-				lines,
-				"i." .. id
-				.. ".Name = "
-				.. q(obj.Name)
-			)
-
-		end
-
+		table.insert(
+			out,
+			"i." .. id ..
+			".Name = " ..
+			q(obj.Name)
+		)
 	end
 
-	table.insert(lines, "")
+	table.insert(out, "")
 
-	----------------------------------------------------------
+	--------------------------------------------------
 	-- PROPERTIES
-	----------------------------------------------------------
+	--------------------------------------------------
 
 	for _, obj in ipairs(objects) do
-
-		if obj:IsA("UnionOperation") and skipUnions then
-			continue
-		end
 
 		local id = ids[obj]
 
 		if obj:IsA("BasePart") then
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".CFrame = "
-				.. cframe(obj.CFrame)
+				out,
+				"i." .. id ..
+				".CFrame = " ..
+				cframe(obj.CFrame)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Size = "
-				.. vector(obj.Size)
+				out,
+				"i." .. id ..
+				".Size = " ..
+				vector(obj.Size)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Color = "
-				.. color(obj.Color)
+				out,
+				"i." .. id ..
+				".Color = " ..
+				color(obj.Color)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Material = Enum.Material."
-				.. obj.Material.Name
+				out,
+				"i." .. id ..
+				".Material = Enum.Material." ..
+				obj.Material.Name
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Transparency = "
-				.. n(obj.Transparency)
+				out,
+				"i." .. id ..
+				".Transparency = " ..
+				n(obj.Transparency)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Reflectance = "
-				.. n(obj.Reflectance)
+				out,
+				"i." .. id ..
+				".Anchored = " ..
+				tostring(obj.Anchored)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Anchored = "
-				.. tostring(obj.Anchored)
+				out,
+				"i." .. id ..
+				".CanCollide = " ..
+				tostring(obj.CanCollide)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".CanCollide = "
-				.. tostring(obj.CanCollide)
+				out,
+				"i." .. id ..
+				".CanTouch = " ..
+				tostring(obj.CanTouch)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".CanTouch = "
-				.. tostring(obj.CanTouch)
-			)
-
-			table.insert(
-				lines,
-				"i." .. id
-				.. ".CanQuery = "
-				.. tostring(obj.CanQuery)
+				out,
+				"i." .. id ..
+				".CanQuery = " ..
+				tostring(obj.CanQuery)
 			)
 
 			if obj:IsA("MeshPart") then
 
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".MeshId = "
-					.. q(obj.MeshId)
+					out,
+					"i." .. id ..
+					".MeshId = " ..
+					q(obj.MeshId)
 				)
 
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".TextureID = "
-					.. q(obj.TextureID)
+					out,
+					"i." .. id ..
+					".TextureID = " ..
+					q(obj.TextureID)
+				)
+
+			elseif obj:IsA("Part") then
+
+				table.insert(
+					out,
+					"i." .. id ..
+					".Shape = Enum.PartType." ..
+					obj.Shape.Name
 				)
 
 			end
 
-			if obj:IsA("Part") then
-
-				table.insert(
-					lines,
-					"i." .. id
-					.. ".Shape = Enum.PartType."
-					.. obj.Shape.Name
-				)
-
-			end
-
-		elseif obj:IsA("Decal") then
+		elseif obj:IsA("Decal")
+			or obj:IsA("Texture") then
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Texture = "
-				.. q(obj.Texture)
+				out,
+				"i." .. id ..
+				".Texture = " ..
+				q(obj.Texture)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Face = Enum.NormalId."
-				.. obj.Face.Name
-			)
-
-		elseif obj:IsA("Texture") then
-
-			table.insert(
-				lines,
-				"i." .. id
-				.. ".Texture = "
-				.. q(obj.Texture)
-			)
-
-			table.insert(
-				lines,
-				"i." .. id
-				.. ".Face = Enum.NormalId."
-				.. obj.Face.Name
+				out,
+				"i." .. id ..
+				".Face = Enum.NormalId." ..
+				obj.Face.Name
 			)
 
 		elseif obj:IsA("Attachment") then
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".CFrame = "
-				.. cframe(obj.CFrame)
+				out,
+				"i." .. id ..
+				".CFrame = " ..
+				cframe(obj.CFrame)
+			)
+
+		elseif obj:IsA("SurfaceAppearance") then
+
+			table.insert(
+				out,
+				"i." .. id ..
+				".ColorMap = " ..
+				q(obj.ColorMap)
+			)
+
+			table.insert(
+				out,
+				"i." .. id ..
+				".NormalMap = " ..
+				q(obj.NormalMap)
 			)
 
 		elseif obj:IsA("WeldConstraint") then
 
-			if obj.Part0
-				and ids[obj.Part0] then
-
+			if ids[obj.Part0] then
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".Part0 = i."
-					.. ids[obj.Part0]
+					out,
+					"i." .. id ..
+					".Part0 = i." ..
+					ids[obj.Part0]
 				)
-
 			end
 
-			if obj.Part1
-				and ids[obj.Part1] then
-
+			if ids[obj.Part1] then
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".Part1 = i."
-					.. ids[obj.Part1]
+					out,
+					"i." .. id ..
+					".Part1 = i." ..
+					ids[obj.Part1]
 				)
-
 			end
 
 		elseif obj:IsA("Weld")
 			or obj:IsA("ManualWeld") then
 
-			if obj.Part0
-				and ids[obj.Part0] then
-
+			if ids[obj.Part0] then
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".Part0 = i."
-					.. ids[obj.Part0]
+					out,
+					"i." .. id ..
+					".Part0 = i." ..
+					ids[obj.Part0]
 				)
-
 			end
 
-			if obj.Part1
-				and ids[obj.Part1] then
-
+			if ids[obj.Part1] then
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".Part1 = i."
-					.. ids[obj.Part1]
+					out,
+					"i." .. id ..
+					".Part1 = i." ..
+					ids[obj.Part1]
 				)
-
 			end
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".C0 = "
-				.. cframe(obj.C0)
+				out,
+				"i." .. id ..
+				".C0 = " ..
+				cframe(obj.C0)
 			)
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".C1 = "
-				.. cframe(obj.C1)
+				out,
+				"i." .. id ..
+				".C1 = " ..
+				cframe(obj.C1)
 			)
-
 		end
-
 	end
 
-	----------------------------------------------------------
-	-- PARENT
-	----------------------------------------------------------
+	--------------------------------------------------
+	-- PARENTS
+	--------------------------------------------------
 
 	for _, obj in ipairs(objects) do
-
-		if obj:IsA("UnionOperation") and skipUnions then
-			continue
-		end
 
 		local id = ids[obj]
 
 		if obj == root then
 
 			table.insert(
-				lines,
-				"i." .. id
-				.. ".Parent = workspace"
+				out,
+				"i." .. id ..
+				".Parent = workspace"
 			)
 
 		else
@@ -673,256 +567,156 @@ local function generate(root)
 			if parent and ids[parent] then
 
 				table.insert(
-					lines,
-					"i." .. id
-					.. ".Parent = i."
-					.. ids[parent]
+					out,
+					"i." .. id ..
+					".Parent = i." ..
+					ids[parent]
 				)
 
 			end
-
 		end
-
 	end
 
-	table.insert(lines, "")
-	table.insert(
-		lines,
-		"return i." .. ids[root]
-	)
+	table.insert(out, "")
+	table.insert(out, "return i." .. ids[root])
 
-	return table.concat(lines, "\n")
-
+	return table.concat(out, "\n")
 end
 
-------------------------------------------------------------
--- GENERATE BUTTON
-------------------------------------------------------------
+--------------------------------------------------
+-- TARGET
+--------------------------------------------------
 
-generateButton.Activated:Connect(function()
+local function getTarget()
 
-	if not selectedModel then
+	local target = mouse.Target
 
-		status.Text =
-			"Click a model first."
-
-		return
-
+	if not target then
+		return nil
 	end
 
-	status.Text =
-		"Generating..."
+	local model =
+		target:FindFirstAncestorOfClass("Model")
+
+	return model or target
+end
+
+--------------------------------------------------
+-- GENERATE
+--------------------------------------------------
+
+local function doGenerate(root)
+
+	if not root then
+
+		status.Text =
+			"Nothing selected."
+
+		return
+	end
+
+	status.Text = "Generating..."
 
 	task.wait()
 
 	local success, result =
 		pcall(function()
-
-			return generate(selectedModel)
-
+			return generate(root)
 		end)
 
 	if success then
 
-		codeBox.Text = result
+		code.Text = result
 
 		status.Text =
-			"Lua generated."
+			"Generated successfully."
 
 	else
 
-		codeBox.Text =
-			"-- ERROR\n"
-			.. tostring(result)
+		code.Text =
+			"-- ERROR\n\n" ..
+			tostring(result)
 
 		status.Text =
 			"Generation failed."
-
 	end
+end
+
+--------------------------------------------------
+-- BUTTONS
+--------------------------------------------------
+
+selectedButton.Activated:Connect(function()
+
+	doGenerate(getTarget())
 
 end)
 
-------------------------------------------------------------
--- COPY SELECTED
-------------------------------------------------------------
+modelsButton.Activated:Connect(function()
 
-copyButton.Activated:Connect(function()
-
-	if not selectedModel then
-
-		status.Text =
-			"Select a model first."
-
-		return
-
-	end
-
-	local clone = selectedModel:Clone()
-
-	clone.Parent =
-		selectedModel.Parent
-
-	status.Text =
-		"Copied " .. selectedModel.Name
+	doGenerate(workspace)
 
 end)
 
-------------------------------------------------------------
--- COPY WORKSPACE MODELS
-------------------------------------------------------------
-
-workspaceModels.Activated:Connect(function()
+partsButton.Activated:Connect(function()
 
 	local folder = Instance.new("Folder")
-
-	folder.Name =
-		"Workspace_Models_Copy"
-
-	local count = 0
-
-	for _, obj in ipairs(workspace:GetChildren()) do
-
-		if obj:IsA("Model") then
-
-			local clone = obj:Clone()
-
-			clone.Parent = folder
-
-			count += 1
-
-		end
-
-	end
-
-	if count == 0 then
-
-		folder:Destroy()
-
-		status.Text =
-			"No models found."
-
-		return
-
-	end
-
-	folder.Parent = workspace
-
-	status.Text =
-		"Copied "
-		.. count
-		.. " models."
-
-end)
-
-------------------------------------------------------------
--- COPY WORKSPACE PARTS
-------------------------------------------------------------
-
-workspaceParts.Activated:Connect(function()
-
-	local folder = Instance.new("Folder")
-
-	folder.Name =
-		"Workspace_Parts_Copy"
-
-	local count = 0
+	folder.Name = "PartsForGeneration"
 
 	for _, obj in ipairs(workspace:GetDescendants()) do
 
 		if obj:IsA("BasePart") then
 
-			local clone = obj:Clone()
-
-			clone.Parent = folder
-
-			count += 1
+			-- Only create references for generation;
+			-- don't clone or parent anything.
+			local marker = Instance.new("ObjectValue")
+			marker.Name = obj.Name
+			marker.Value = obj
+			marker.Parent = folder
 
 		end
-
 	end
 
-	if count == 0 then
+	-- Generate directly from Workspace instead of
+	-- attempting to copy/parent parts.
+	local success, result =
+		pcall(function()
+			return generate(workspace)
+		end)
 
-		folder:Destroy()
+	folder:Destroy()
 
-		status.Text =
-			"No parts found."
-
-		return
-
+	if success then
+		code.Text = result
+		status.Text = "Parts/workspace generated."
+	else
+		code.Text = "-- ERROR\n\n" .. tostring(result)
+		status.Text = "Generation failed."
 	end
-
-	folder.Parent = workspace
-
-	status.Text =
-		"Copied "
-		.. count
-		.. " parts."
 
 end)
 
-------------------------------------------------------------
--- COPY ENTIRE WORKSPACE
-------------------------------------------------------------
+workspaceButton.Activated:Connect(function()
 
-copyWorkspace.Activated:Connect(function()
+	doGenerate(workspace)
 
-	status.Text =
-		"Scanning Workspace..."
+end)
 
-	local objects = workspace:GetDescendants()
+clearButton.Activated:Connect(function()
 
-	local count = #objects
+	code.Text = ""
+	status.Text = "Cleared."
 
-	-- Safety limit to avoid accidentally freezing the client.
-	if count > 3000 then
+end)
 
-		status.Text =
-			"Workspace too large: "
-			.. count
-			.. " objects."
+copyButton.Activated:Connect(function()
 
-		warn(
-			"Workspace copy cancelled because it contains "
-			.. count
-			.. " objects."
-		)
-
-		return
-
-	end
-
-	local folder = Instance.new("Folder")
-
-	folder.Name =
-		"Workspace_Copy"
-
-	local copied = 0
-
-	for _, obj in ipairs(workspace:GetChildren()) do
-
-		local success, clone =
-			pcall(function()
-
-				return obj:Clone()
-
-			end)
-
-		if success and clone then
-
-			clone.Parent = folder
-
-			copied += 1
-
-		end
-
-	end
-
-	folder.Parent = workspace
+	-- Roblox does not expose arbitrary clipboard
+	-- writing to normal LocalScripts.
+	code:CaptureFocus()
+	code.CursorPosition = #code.Text + 1
 
 	status.Text =
-		"Workspace copied: "
-		.. copied
-		.. " top-level objects."
+		"Code box focused — use Ctrl+A / Ctrl+C."
 
 end)
